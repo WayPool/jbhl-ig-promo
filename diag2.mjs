@@ -1,0 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire('/var/www/vhosts/jbhasesorialegal.com/portal/apps/portal/server.js');
+const url = readFileSync('/var/www/vhosts/jbhasesorialegal.com/shared/portal.env','utf8').split('\n').find(l=>l.startsWith('DATABASE_URL='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const mysql = require('mysql2/promise'); const c = await mysql.createConnection(url);
+const COLAB='31babca6-5b81-11f1-88c8-ee5423879f46';
+const [cc] = await c.query("SELECT case_id,user_id,role FROM case_collaborators WHERE user_id=?",[COLAB]);
+console.log('case_collaborators del COLABORADOR:', cc.length); for (const x of cc) console.log('  case='+x.case_id.slice(0,8)+' role='+(x.role||'—'));
+const [lead] = await c.query("SELECT id,expediente_num FROM cases WHERE lead_lawyer_id=?",[COLAB]);
+console.log('casos donde el COLABORADOR es lead:', lead.length);
+await c.end();
