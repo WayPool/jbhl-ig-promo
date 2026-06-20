@@ -1,0 +1,11 @@
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module';
+const require = createRequire('/var/www/vhosts/jbhasesorialegal.com/portal/apps/portal/server.js');
+const url = readFileSync('/var/www/vhosts/jbhasesorialegal.com/shared/portal.env','utf8').split('\n').find(l=>l.startsWith('DATABASE_URL='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const mysql = require('mysql2/promise'); const c = await mysql.createConnection(url);
+const [cs] = await c.query("SELECT collaborator_user_id,plan_period,status FROM collaborator_subscriptions");
+console.log('collaborator_subscriptions:', cs.length); for (const x of cs) console.log('  user='+String(x.collaborator_user_id).slice(0,8)+' '+x.plan_period+' '+x.status);
+const [nc] = await c.query("SELECT COUNT(*) n FROM users WHERE role='COLABORADOR'");
+console.log('usuarios COLABORADOR:', nc[0].n);
+const [os] = await c.query("SELECT org_id,plan,status FROM organization_subscriptions");
+console.log('organization_subscriptions:', os.length); for (const x of os) console.log('  org='+String(x.org_id).slice(0,8)+' '+x.plan+' '+x.status);
+await c.end();
