@@ -242,9 +242,8 @@ async function main() {
        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
        PRIMARY KEY (id),
        UNIQUE KEY uq_org_slug (slug),
-       KEY idx_org_type (type),
-       CONSTRAINT fk_org_owner_user FOREIGN KEY (owner_user_id) REFERENCES users (id) ON DELETE SET NULL
-     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+       KEY idx_org_type (type)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   );
 
   await runIdempotent(
@@ -263,11 +262,8 @@ async function main() {
        PRIMARY KEY (id),
        UNIQUE KEY uq_membership_user_org (user_id, org_id),
        KEY idx_membership_org (org_id),
-       KEY idx_membership_user (user_id),
-       CONSTRAINT fk_membership_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-       CONSTRAINT fk_membership_org FOREIGN KEY (org_id) REFERENCES organizations (id) ON DELETE CASCADE,
-       CONSTRAINT fk_membership_invited_by FOREIGN KEY (invited_by_id) REFERENCES users (id) ON DELETE SET NULL
-     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+       KEY idx_membership_user (user_id)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   );
 
   // ── 2) Seed org JBH (idempotente) ──────────────────────────────────────────
