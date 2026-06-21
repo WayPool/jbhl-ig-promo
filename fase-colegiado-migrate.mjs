@@ -63,6 +63,7 @@ const ORG_COLUMNS = [
   ['colegio', 'varchar(255) NULL'],
   ['colegiado_num', 'varchar(100) NULL'],
   ['colegiado_cert_serial', 'varchar(255) NULL'],
+  ['colegiado_claim_mismatch', 'tinyint NOT NULL DEFAULT 0'],
 ];
 
 function parseArgs(argv) {
