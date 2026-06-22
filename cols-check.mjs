@@ -1,0 +1,12 @@
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module';
+const B='/var/www/vhosts/jbhasesorialegal.com';
+const require = createRequire(B+'/portal/apps/portal/server.js');
+const url = readFileSync(B+'/shared/portal.env','utf8').split('\n').find(l=>l.startsWith('DATABASE_URL='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const m = require('mysql2/promise'); const c = await m.createConnection(url);
+const [cols]=await c.query("SELECT column_name FROM information_schema.columns WHERE table_name='organization_subscriptions' AND column_name LIKE '%custom%' OR (table_name='organization_subscriptions' AND column_name LIKE '%override%')");
+console.log('cols custom/override:', cols.map(r=>r.column_name||r.COLUMN_NAME).join(','));
+const [t]=await c.query("SELECT COUNT(*) n FROM information_schema.tables WHERE table_name='org_custom_plan_requests'");
+console.log('tabla org_custom_plan_requests:', (t[0].n||t[0].N)>0?'SI':'NO');
+const [reqs]=await c.query("SELECT * FROM org_custom_plan_requests LIMIT 1").catch(e=>{console.log('SELECT requests ERR:',e.message);return[[]];});
+console.log('select requests OK, filas:', reqs.length);
+await c.end();
