@@ -1,0 +1,14 @@
+import { readFileSync } from 'node:fs';
+const B='/var/www/vhosts/jbhasesorialegal.com';
+const env = readFileSync(B+'/shared/portal.env','utf8');
+const key = env.split('\n').find(l=>l.startsWith('STRIPE_SECRET_KEY='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+console.log('key:', key ? key.slice(0,8)+'…' : 'FALTA');
+const auth = 'Basic ' + Buffer.from(key+':').toString('base64');
+const cs = await fetch('https://api.stripe.com/v1/coupons?limit=50', { headers: { Authorization: auth } }).then(r=>r.json());
+console.log('=== COUPONS ===');
+if (cs.error) console.log('ERR', cs.error.type, cs.error.message);
+else for (const c of cs.data) console.log(`id=${c.id}  name=${c.name}  pct_off=${c.percent_off}  amt_off=${c.amount_off}  dur=${c.duration}  valid=${c.valid}`);
+const pcs = await fetch('https://api.stripe.com/v1/promotion_codes?limit=50', { headers: { Authorization: auth } }).then(r=>r.json());
+console.log('=== PROMOTION CODES ===');
+if (pcs.error) console.log('ERR', pcs.error.type, pcs.error.message);
+else for (const p of pcs.data) console.log(`code=${p.code}  coupon=${p.coupon.id}  pct_off=${p.coupon.percent_off}  active=${p.active}`);
