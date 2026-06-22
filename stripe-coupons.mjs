@@ -1,0 +1,14 @@
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module';
+const B='/var/www/vhosts/jbhasesorialegal.com';
+const require = createRequire(B+'/portal/apps/portal/server.js');
+const env = readFileSync(B+'/shared/portal.env','utf8');
+const get = (k) => env.split('\n').find(l=>l.startsWith(k+'='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const key = get('STRIPE_SECRET_KEY');
+console.log('STRIPE key prefix:', key ? key.slice(0,8)+'…('+(key.startsWith('sk_live')?'LIVE':key.startsWith('sk_test')?'TEST':'?')+')' : 'FALTA');
+const Stripe = require('stripe'); const stripe = new Stripe(key, { apiVersion: '2025-08-27.basil' });
+const cs = await stripe.coupons.list({ limit: 50 });
+console.log('=== CUPONES ('+cs.data.length+') ===');
+for (const c of cs.data) console.log(`  id=${c.id}  name=${c.name||'-'}  percent_off=${c.percent_off??'-'}  amount_off=${c.amount_off??'-'}  duration=${c.duration}  valid=${c.valid}`);
+const pcs = await stripe.promotionCodes.list({ limit: 50 });
+console.log('=== PROMOTION CODES ('+pcs.data.length+') ===');
+for (const p of pcs.data) console.log(`  code=${p.code}  coupon=${p.coupon.id}  percent_off=${p.coupon.percent_off??'-'}  active=${p.active}`);
