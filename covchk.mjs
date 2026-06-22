@@ -1,0 +1,11 @@
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module';
+const B='/var/www/vhosts/jbhasesorialegal.com';
+const require = createRequire(B+'/portal/apps/portal/server.js');
+const url = readFileSync(B+'/shared/portal.env','utf8').split('\n').find(l=>l.startsWith('DATABASE_URL='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const m = require('mysql2/promise'); const c = await m.createConnection(url);
+const cid='06c96f56-a0b3-4de1-a6ad-d98e33c8e4aa';
+const [[ca]]=await c.query("SELECT org_id FROM cases WHERE id=?",[cid]);
+console.log('caso org_id:', ca?.org_id);
+const [rows]=await c.query(`SELECT d.id, LEFT(d.original_filename,28) fn, d.upload_status, d.org_id doc_org, da.status an_status, da.org_id an_org FROM case_documents d LEFT JOIN document_analyses da ON da.document_id=d.id WHERE d.case_id=? AND d.deleted_at IS NULL ORDER BY d.created_at`,[cid]);
+for(const r of rows) console.log(`  ${r.fn.padEnd(30)} up=${r.up || r.upload_status} | analisis=${r.an_status||'(sin fila)'} | doc_org=${(r.doc_org||'NULL').slice(0,8)} an_org=${(r.an_org||'NULL')===null?'NULL':(r.an_org||'NULL').slice(0,8)}`);
+await c.end();
