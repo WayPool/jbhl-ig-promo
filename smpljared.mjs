@@ -1,0 +1,10 @@
+import { readFileSync } from 'node:fs'; import { createRequire } from 'node:module';
+const B='/var/www/vhosts/jbhasesorialegal.com';
+const require = createRequire(B+'/portal/apps/portal/server.js');
+const url = readFileSync(B+'/shared/portal.env','utf8').split('\n').find(l=>l.startsWith('DATABASE_URL='))?.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g,'');
+const m = require('mysql2/promise'); const c = await m.createConnection(url);
+const [[ca]]=await c.query("SELECT id FROM cases WHERE expediente_num='JBH-2026-004' AND deleted_at IS NULL");
+const [[q]]=await c.query("SELECT id FROM case_questionnaires WHERE case_id=? ORDER BY round DESC LIMIT 1",[ca.id]);
+const [qs]=await c.query("SELECT block,text FROM questionnaire_questions WHERE questionnaire_id=? AND status='active' ORDER BY block_order,question_order LIMIT 8",[q.id]);
+qs.forEach((x,i)=>console.log(`${i+1}. [${x.block}] ${x.text}`));
+await c.end();
