@@ -107,6 +107,43 @@ async function indexExists(conn, table, index) {
   return rows.length > 0;
 }
 
+async function columnExists(conn, table, column) {
+  const [rows] = await conn.query(
+    `SELECT 1 FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ? LIMIT 1`,
+    [table, column],
+  );
+  return rows.length > 0;
+}
+
+/**
+ * ALTER idempotente para `document_analysis_jobs.precedent_id` (+ su índice). MariaDB
+ * 10.3 NO soporta `ADD COLUMN IF NOT EXISTS` de forma fiable en todas las versiones, así
+ * que comprobamos INFORMATION_SCHEMA antes de ejecutar. Los jobs 'precedent-extract' del
+ * módulo de jurisprudencia referencian aquí un `legal_precedents` id (FK-less, como
+ * herencia_id); `case_id` queda NULL en ellos.
+ */
+async function ensurePrecedentIdColumn(conn) {
+  if (await columnExists(conn, 'document_analysis_jobs', 'precedent_id')) {
+    console.log('[jurisprudencia] SKIP  ADD COLUMN document_analysis_jobs.precedent_id (ya existe)');
+  } else {
+    await runIdempotent(
+      conn,
+      'ADD COLUMN document_analysis_jobs.precedent_id',
+      `ALTER TABLE document_analysis_jobs ADD COLUMN precedent_id varchar(36) NULL`,
+    );
+  }
+  if (await indexExists(conn, 'document_analysis_jobs', 'idx_jobs_precedent')) {
+    console.log('[jurisprudencia] SKIP  CREATE INDEX idx_jobs_precedent (ya existe)');
+  } else {
+    await runIdempotent(
+      conn,
+      'CREATE INDEX idx_jobs_precedent',
+      `CREATE INDEX idx_jobs_precedent ON document_analysis_jobs (precedent_id)`,
+    );
+  }
+}
+
 // ── DDL ───────────────────────────────────────────────────────────────────────
 const TABLES = [
   {
@@ -415,6 +452,10 @@ async function main() {
     await runIdempotent(conn, `CREATE TABLE ${t.name}`, t.ddl);
   }
 
+  // ── 1b) Columna precedent_id en la cola de jobs (jurisprudencia, Fase 1) ───────
+  console.log('[jurisprudencia] --- ALTER document_analysis_jobs.precedent_id ---');
+  await ensurePrecedentIdColumn(conn);
+
   // ── 2) Seed de taxonomía penal ───────────────────────────────────────────────
   console.log('[jurisprudencia] --- Seed criminal_taxonomy ---');
   await seedTaxonomy(conn);
@@ -435,6 +476,12 @@ async function main() {
         ok = false;
       }
     }
+  }
+
+  // Verifica la columna precedent_id de la cola de jobs.
+  if (!(await columnExists(conn, 'document_analysis_jobs', 'precedent_id'))) {
+    console.error('[jurisprudencia] VERIFY FAIL: falta la columna document_analysis_jobs.precedent_id.');
+    ok = false;
   }
 
   // Verifica que el seed entró (al menos una fila conocida).
