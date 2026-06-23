@@ -343,6 +343,27 @@ const TABLES = [
     ],
   },
   {
+    name: 'legal_precedent_audit',
+    ddl: `CREATE TABLE IF NOT EXISTS legal_precedent_audit (
+       id varchar(36) NOT NULL DEFAULT (UUID()),
+       precedent_id varchar(36) NOT NULL,
+       actor_id varchar(36) NULL,
+       org_id varchar(36) NULL,
+       kind varchar(60) NOT NULL,
+       data json NULL,
+       created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       PRIMARY KEY (id),
+       KEY idx_legal_precedent_audit_precedent (precedent_id),
+       KEY idx_legal_precedent_audit_org (org_id),
+       KEY idx_legal_precedent_audit_kind (kind)
+     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+    indexes: [
+      'idx_legal_precedent_audit_precedent',
+      'idx_legal_precedent_audit_org',
+      'idx_legal_precedent_audit_kind',
+    ],
+  },
+  {
     name: 'criminal_taxonomy',
     ddl: `CREATE TABLE IF NOT EXISTS criminal_taxonomy (
        id varchar(36) NOT NULL DEFAULT (UUID()),
